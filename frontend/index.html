@@ -95,6 +95,18 @@
         }
     }
     </script>
-    <script type="module" src="/static/js/app.js?v=3"></script>
+    <!-- Debug Panel (toggle with D key) -->
+    <div id="debug-panel" class="debug-panel hidden">
+        <div class="debug-header">
+            <strong>🔧 位置调试</strong>
+            <span style="font-size:.7rem;color:#8899b4">
+                双击器官拖动 | 滑块微调 | Ctrl+C 导出
+            </span>
+            <button id="btn-export-pos" class="btn btn-sm">📋 导出位置</button>
+        </div>
+        <div id="debug-sliders" class="debug-sliders"></div>
+    </div>
+
+    <script type="module" src="/static/js/app.js?v=6"></script>
 </body>
 </html>
