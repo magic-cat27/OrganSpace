@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrganSpace — 人体器官交互模拟</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <header class="topbar">
+        <span class="logo">🧬 OrganSpace</span>
+        <div class="step-progress" id="step-progress">
+            <!-- JS fills: step dots -->
+        </div>
+        <div class="topbar-actions">
+            <span class="status-dot connected" id="status-dot" title="连接状态"></span>
+            <button id="btn-reset" class="btn-icon" title="重置">🔄</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main">
+        <!-- 3D Viewport -->
+        <div class="viewport" id="viewport">
+            <canvas id="three-canvas"></canvas>
+            <div class="viewport-hint">🖱 拖拽旋转 | 滚轮缩放 | 右键平移</div>
+            <!-- Loading overlay -->
+            <div class="loading-overlay hidden" id="loading-overlay">
+                <div class="spinner"></div>
+                <span>加载3D模型中...</span>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <aside class="panel" id="panel">
+            <!-- Welcome state -->
+            <div class="panel-welcome" id="panel-welcome">
+                <h2>🧬 欢迎使用 OrganSpace</h2>
+                <p>一个逐步演示人体器官系统间"牵一发而动全身"因果效应的教学工具。</p>
+                <div class="scenario-input-area">
+                    <textarea id="scenario-input" placeholder="输入一个医学场景，例如：&#10;• 急性心肌梗死&#10;• 长期吸烟30年&#10;• 严重脱水&#10;• 肝硬化晚期" rows="4"></textarea>
+                    <button id="btn-start" class="btn btn-primary btn-lg">开始模拟</button>
+                </div>
+                <div class="quick-scenarios">
+                    <span class="quick-label">快速场景：</span>
+                    <button class="btn btn-sm" data-scenario="急性心肌梗死">心梗</button>
+                    <button class="btn btn-sm" data-scenario="长期吸烟30年对肺和心血管的影响">吸烟</button>
+                    <button class="btn btn-sm" data-scenario="严重脱水">脱水</button>
+                    <button class="btn btn-sm" data-scenario="肝硬化晚期">肝硬化</button>
+                </div>
+            </div>
+
+            <!-- Step display state -->
+            <div class="panel-step hidden" id="panel-step">
+                <div class="step-header">
+                    <span class="step-badge" id="step-badge">步骤 1/5</span>
+                    <span class="step-organ-name" id="step-organ"></span>
+                    <span class="step-status" id="step-status"></span>
+                </div>
+                <div class="step-body">
+                    <div class="step-explain" id="step-explain"></div>
+                    <div class="step-indicators" id="step-indicators"></div>
+                </div>
+                <div class="step-chat-area" id="step-chat-area">
+                    <div class="step-chat-messages" id="step-chat-msgs"></div>
+                    <div class="step-chat-input-row">
+                        <input type="text" id="step-chat-input" placeholder="提问了解更多..." />
+                        <button id="btn-chat-send" class="btn btn-sm">发送</button>
+                        <div class="organ-quick-btns" id="organ-quick-btns"></div>
+                    </div>
+                </div>
+                <div class="step-nav">
+                    <button id="btn-prev" class="btn" disabled>← 上一步</button>
+                    <button id="btn-next" class="btn btn-primary">下一步 →</button>
+                </div>
+            </div>
+
+            <!-- Complete state -->
+            <div class="panel-complete hidden" id="panel-complete">
+                <h2>✅ 模拟完成</h2>
+                <div id="complete-summary"></div>
+                <div id="complete-causal-map"></div>
+                <button id="btn-restart" class="btn btn-primary">开始新场景</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Scripts -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="/static/js/app.js?v=3"></script>
+</body>
+</html>
