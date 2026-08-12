@@ -4,6 +4,84 @@ import json
 import asyncio
 from models.graph import OrganGraph, ORGAN_IDS, ORGAN_NAMES
 
+# ===== 本地模板因果链（无 API Key / LLM 失败时回退） =====
+# 保证答辩现场即使 Key 失效或断网，因果链演示模式仍可运行（确定性模板，结果稳定）。
+FALLBACK_CHAINS = [
+    {
+        "keywords": ["心肌梗死", "心梗", "胸痛", "冠心病"],
+        "scenario_name": "急性心肌梗死",
+        "steps": [
+            {"step": 1, "organ_id": "cardiovascular", "organ_name": "心血管系统",
+             "status": "impaired",
+             "explanation": "冠状动脉阻塞导致心肌缺血，心脏泵血能力下降，心输出量降低。",
+             "indicators": {"heart_rate": {"value": 105, "status": "high"},
+                            "nibp_systolic": {"value": 95, "status": "low"}}},
+            {"step": 2, "organ_id": "respiratory", "organ_name": "呼吸系统",
+             "status": "stressed",
+             "explanation": "心输出量下降导致肺循环淤血与氧合效率降低，出现呼吸代偿。",
+             "indicators": {"respiratory_rate": {"value": 24, "status": "high"},
+                            "pao2": {"value": 80, "status": "low"}}},
+            {"step": 3, "organ_id": "renal", "organ_name": "肾脏",
+             "status": "stressed",
+             "explanation": "肾灌注压下降激活肾素-血管紧张素系统，肾功能代偿性应激。",
+             "indicators": {"egfr": {"value": 75, "status": "low"},
+                            "urine_output": {"value": 70, "status": "low"}}},
+            {"step": 4, "organ_id": "metabolic", "organ_name": "代谢系统",
+             "status": "stressed",
+             "explanation": "组织灌注不足引发无氧代谢，乳酸升高，代偿性应激状态。",
+             "indicators": {"lactate": {"value": 2.8, "status": "high"}}},
+        ],
+    },
+    {
+        "keywords": ["吸烟", "吸烟30年", "肺"],
+        "scenario_name": "长期吸烟",
+        "steps": [
+            {"step": 1, "organ_id": "respiratory", "organ_name": "呼吸系统",
+             "status": "impaired",
+             "explanation": "长期吸烟导致气道慢性炎症与肺泡结构破坏，肺功能进行性下降。",
+             "indicators": {"respiratory_rate": {"value": 20, "status": "high"},
+                            "pao2": {"value": 78, "status": "low"}}},
+            {"step": 2, "organ_id": "cardiovascular", "organ_name": "心血管系统",
+             "status": "stressed",
+             "explanation": "缺氧加重心脏负荷，尼古丁导致血管收缩与血压升高。",
+             "indicators": {"heart_rate": {"value": 92, "status": "high"},
+                            "nibp_systolic": {"value": 135, "status": "high"}}},
+            {"step": 3, "organ_id": "renal", "organ_name": "肾脏",
+             "status": "stressed",
+             "explanation": "慢性缺氧与高血压对肾血管造成持续压力，肾功能代偿性应激。",
+             "indicators": {"egfr": {"value": 82, "status": "low"}}},
+        ],
+    },
+    {
+        "keywords": ["脱水", "严重脱水"],
+        "scenario_name": "严重脱水",
+        "steps": [
+            {"step": 1, "organ_id": "renal", "organ_name": "肾脏",
+             "status": "impaired",
+             "explanation": "循环血量减少导致肾灌注下降，肾小球滤过率降低，尿液浓缩。",
+             "indicators": {"egfr": {"value": 65, "status": "low"},
+                            "urine_output": {"value": 30, "status": "low"}}},
+            {"step": 2, "organ_id": "cardiovascular", "organ_name": "心血管系统",
+             "status": "stressed",
+             "explanation": "血容量不足触发交感代偿，心率加快、外周血管收缩以维持血压。",
+             "indicators": {"heart_rate": {"value": 110, "status": "high"},
+                            "nibp_systolic": {"value": 90, "status": "low"}}},
+            {"step": 3, "organ_id": "blood", "organ_name": "血液",
+             "status": "stressed",
+             "explanation": "血液浓缩导致血细胞比容与电解质浓度相对升高。",
+             "indicators": {"sodium": {"value": 148, "status": "high"}}},
+        ],
+    },
+]
+
+
+def find_fallback_chain(scenario: str) -> list[dict]:
+    """按关键词匹配本地模板因果链；无匹配返回空列表。"""
+    for chain in FALLBACK_CHAINS:
+        if any(kw in scenario for kw in chain["keywords"]):
+            return [dict(step) for step in chain["steps"]]
+    return []
+
 
 class Orchestrator:
     """Main agent: generates causal chain, executes steps, handles Q&A."""
@@ -82,15 +160,51 @@ class Orchestrator:
 
         return self._parse_chain(text)
 
+    async def generate_causal_chain_with_fallback(self, user_input: str) -> list[dict]:
+        """生成因果链；LLM 不可用（无 Key/超时/网络失败/解析失败）时回退到本地模板。
+
+        保证答辩现场因果链模式不因外部依赖失效而报错。
+        """
+        self._scenario_context = user_input
+        try:
+            chain = await self.generate_causal_chain(user_input)
+            if chain:
+                return chain
+        except Exception:
+            pass
+        # 回退：本地确定性模板
+        return find_fallback_chain(user_input)
+
+    async def generate_causal_chain_safe(self, user_input: str):
+        """返回 (因果链, 是否使用了本地模板回退)。"""
+        self._scenario_context = user_input
+        try:
+            chain = await self.generate_causal_chain(user_input)
+            if chain:
+                return chain, False
+        except Exception:
+            pass
+        return find_fallback_chain(user_input), True
+
     def _parse_chain(self, text: str) -> list[dict]:
+        """解析 LLM 返回的因果链。任何异常/非预期结构都返回空列表（由上层提示重试）。"""
         try:
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0]
             data = json.loads(text.strip())
-            return data.get("steps", [])
-        except (json.JSONDecodeError, IndexError):
+            steps = data.get("steps", [])
+            # LLM 偶尔返回 dict 或 null，防御性校验
+            if not isinstance(steps, list):
+                return []
+            # 清洗：丢弃缺 organ_id 的脏步骤，保证前端渲染安全
+            clean = []
+            for s in steps:
+                if isinstance(s, dict) and s.get("organ_id"):
+                    clean.append(s)
+            return clean
+        except (json.JSONDecodeError, IndexError, AttributeError):
             return []
 
     # ===== Step Execution =====
@@ -120,10 +234,14 @@ class Orchestrator:
         # Merge LLM output with the step's pre-defined indicator template
         state = agent.state.to_dict()
         # Override with step's explicitly set indicators if available
+        # （值解析失败时跳过该指标，不让单个脏值破坏整步执行）
         if step.get("indicators"):
             for key, val in step["indicators"].items():
-                if isinstance(val, dict) and "value" in val and key in agent.state.indicators:
-                    agent.state.indicators[key].value = float(val["value"])
+                try:
+                    if isinstance(val, dict) and "value" in val and key in agent.state.indicators:
+                        agent.state.indicators[key].value = float(val["value"])
+                except (TypeError, ValueError):
+                    continue
             state = agent.state.to_dict()
 
         return state

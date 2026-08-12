@@ -31,6 +31,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .step-line{width:24px;height:2px;background:var(--border);transition:background .4s}
 .step-line.done{background:var(--normal)}
 
+/* ===== Edit Mode Toolbar ===== */
+.edit-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:9}
+.edit-toolbar-info{display:flex;align-items:center;gap:8px;min-width:0}
+.edit-selected{font-size:.85rem;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edit-toolbar-actions{display:flex;align-items:center;gap:10px}
+.edit-mode-group{display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px}
+.edit-mode-btn{font-size:1rem}
+.edit-mode-btn.active{background:var(--accent);color:#000;border-radius:6px}
+.edit-exit-hint{font-size:.7rem;color:var(--text2);opacity:.7}
+
+/* ===== 模型显示/隐藏面板 ===== */
+.visibility-panel{
+    position:absolute;top:60px;right:16px;z-index:15;
+    width:230px;max-height:70vh;overflow-y:auto;
+    background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.4);
+}
+.visibility-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:600}
+.visibility-header .btn-icon{font-size:.9rem;padding:2px 6px}
+.visibility-list{display:flex;flex-direction:column;padding:6px}
+.visibility-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:.82rem;cursor:pointer;transition:background .15s}
+.visibility-item:hover{background:var(--bg3)}
+.visibility-item input{accent-color:var(--accent);cursor:pointer}
+.visibility-item span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.visibility-item em{font-style:normal;font-size:.68rem;color:var(--text2);opacity:.7}
+
 /* ===== Main Layout ===== */
 .main{display:flex;flex:1;overflow:hidden}
 .viewport{flex:1;position:relative;cursor:grab;min-width:0}
@@ -64,7 +90,118 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-sm{padding:5px 12px;font-size:.78rem}
 .btn-icon{background:none;border:none;cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:6px}
 .btn-icon:hover{background:var(--bg3)}
+.btn-icon.active{background:var(--accent);color:#000;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.btn-icon.pulse-once{animation:editpulse .6s ease}
+#btn-lock-view.active{background:var(--stressed);color:#000;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+@keyframes editpulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.viewport.view-locked{cursor:default}
+.viewport.edit-mode{cursor:grab}
+.viewport.edit-mode:active{cursor:grabbing}
+.viewport.edit-mode.scale-gesture{cursor:ns-resize}
+.viewport.edit-mode.scale-gesture:active{cursor:ns-resize}
+.viewport.edit-mode .viewport-hint{color:var(--accent);border:1px solid var(--accent);background:rgba(10,15,26,.95)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== 疾病模拟模式 ===== */
+.mode-divider{height:1px;background:var(--border);margin:8px 0}
+.disease-mode-entry{display:flex;flex-direction:column;gap:8px;padding:14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)}
+.disease-mode-entry h3{font-size:.95rem;font-weight:600}
+.mode-desc{font-size:.78rem;color:var(--text2);line-height:1.5}
+
+.panel-disease-config,.panel-disease-run{padding:24px;display:flex;flex-direction:column;gap:16px;flex:1;overflow-y:auto}
+.panel-disease-config h2{font-size:1.1rem;font-weight:600}
+.config-group{display:flex;flex-direction:column;gap:8px}
+.config-group label{font-size:.8rem;color:var(--text2)}
+.config-select,.config-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-size:.85rem;outline:none}
+.config-select:focus,.config-input:focus{border-color:var(--accent)}
+.severity-btns{display:flex;gap:6px}
+.severity-btns .btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.config-actions{display:flex;gap:10px;margin-top:8px}
+
+.sim-header{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);font-size:.85rem}
+.sim-title{font-weight:600;flex:1}
+.sim-time,.sim-step{font-variant-numeric:tabular-nums;color:var(--text2)}
+.sim-controls{display:flex;gap:6px;flex-wrap:wrap}
+.sim-controls .btn.active{background:var(--accent);color:#000}
+.sim-alerts{display:flex;flex-direction:column;gap:4px}
+.sim-alert-item{padding:6px 12px;background:#450a0a;border-left:3px solid var(--failing);border-radius:6px;font-size:.8rem;color:#fca5a5}
+.sim-indicators{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sim-ind-card{display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)}
+.sim-ind-card.warn{border-color:var(--failing);background:#1c1212}
+.sim-ind-card .ind-name{font-size:.7rem;color:var(--text2)}
+.sim-ind-card .ind-val{font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums}
+.sim-ind-card .ind-val em{font-style:normal;font-size:.68rem;color:var(--text2);margin-left:2px}
+.sim-ind-card .ind-range{display:block;font-size:.62rem;color:var(--text2);opacity:.7;margin-top:2px}
+.sim-ind-card .ind-baseline{font-size:.66rem;color:var(--text2);margin-top:2px;font-variant-numeric:tabular-nums}
+.sim-ind-card .ind-baseline em{font-style:normal}
+.sim-ind-card .ind-baseline em.worse{color:var(--impaired);font-weight:700}
+.sim-ind-card .ind-baseline em.better{color:var(--normal)}
+.sim-chart-wrap{background:var(--bg3);border-radius:var(--radius);padding:12px;height:200px;display:flex;flex-direction:column;gap:6px}
+.sim-chart-wrap .chart-title{font-size:.78rem;color:var(--text2)}
+#sim-chart{flex:1;width:100%}
+.sim-log{display:flex;flex-direction:column;gap:2px;max-height:120px;overflow-y:auto;font-size:.75rem;font-family:monospace;padding:8px;background:var(--bg);border-radius:8px}
+.sim-log-item{padding:2px 4px;color:var(--text2)}
+.sim-log-item.alert{color:#fca5a5}
+.sim-log-item.info{color:#9aa7b8}
+
+/* ===== 教学增强：主 Demo 提示 / 因果链 / 干预 / 免责声明 ===== */
+.config-tip{padding:8px 12px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.35);border-left:3px solid var(--accent);border-radius:8px;font-size:.8rem;color:var(--text);line-height:1.5;margin-bottom:12px}
+.sim-path{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:.75rem;line-height:1.6}
+.sim-path-title{font-weight:600;color:var(--accent2);margin-bottom:2px}
+.sim-path-steps{color:var(--text2);display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.sim-path-steps .arrow{color:var(--accent);font-weight:700}
+.btn-intervention{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);color:#fca5a5}
+.btn-intervention:hover{background:rgba(239,68,68,.3)}
+.sim-interventions{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.sim-intervention-item{padding:6px 12px;background:#10261c;border-left:3px solid var(--normal);border-radius:6px;font-size:.78rem;color:#86efac}
+.sim-disclaimer{font-size:.72rem;color:var(--text2);opacity:.8;margin-top:8px;line-height:1.5}
+
+/* ===== 局部病灶影响面板（空间智能） ===== */
+.lesion-panel{position:absolute;right:16px;top:64px;width:300px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.45);font-size:.8rem}
+.lesion-panel .visibility-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600}
+.lesion-hint{font-size:.72rem;color:var(--text2);line-height:1.5;margin-bottom:8px}
+.lesion-status{font-size:.78rem;color:var(--accent);margin-bottom:8px;line-height:1.5}
+.lesion-sub{color:var(--text2);font-size:.7rem}
+.lesion-list{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;margin-bottom:8px}
+.lesion-item{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;padding:4px 8px;background:var(--bg3);border-radius:6px;font-size:.72rem}
+.lesion-organ{font-weight:600;color:var(--text)}
+.lesion-dist{color:var(--text2);font-variant-numeric:tabular-nums}
+.lesion-level{font-size:.66rem;padding:1px 6px;border-radius:8px;font-weight:600}
+.lesion-level.direct{background:#ef4444;color:#fff}
+.lesion-level.high{background:#f97316;color:#000}
+.lesion-level.possible{background:#eab308;color:#000}
+.lesion-level.none{background:var(--bg);color:var(--text2)}
+.lesion-strength{color:var(--text2);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.lesion-legend{display:flex;gap:10px;font-size:.68rem;color:var(--text2);margin-bottom:8px;flex-wrap:wrap}
+.lesion-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+.lesion-narrative{font-size:.72rem;color:var(--text);background:rgba(56,189,248,.07);border-left:3px solid var(--accent);padding:6px 8px;border-radius:4px;margin-bottom:8px;line-height:1.6}
+.lesion-narrative b{color:var(--accent)}
+
+/* ===== 空间合理性检查 ===== */
+.sanity-section{margin-top:4px;border-top:1px solid var(--border);padding-top:8px}
+.sanity-results{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:.72rem}
+.sanity-item{padding:4px 8px;border-radius:4px;line-height:1.5}
+.sanity-item.ok{background:#10261c;color:#86efac;border-left:3px solid var(--normal)}
+.sanity-item.warn{background:#2a2010;color:#fcd34d;border-left:3px solid var(--stressed)}
+.sanity-item.bad{background:#2a1010;color:#fca5a5;border-left:3px solid var(--failing)}
+.sanity-empty{color:var(--text2);font-style:italic}
+
+/* ===== 空间检查提示条（编辑模式拖动后） ===== */
+.space-toast{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#2a1010;border:1px solid rgba(239,68,68,.5);border-left:3px solid var(--failing);color:#fca5a5;padding:8px 14px;border-radius:8px;font-size:.78rem;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.4);animation:toast-in .3s ease}
+@keyframes toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* ===== Agent 执行轨迹面板 ===== */
+.sim-traces{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:.75rem}
+.sim-traces-title{font-weight:600;color:var(--accent);margin-bottom:6px}
+.sim-traces-body{display:flex;flex-direction:column;gap:8px}
+.sim-trace-empty{color:var(--text2);opacity:.7;font-style:italic;padding:4px 0}
+.sim-trace-agent{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 8px}
+.sim-trace-agent-head{font-weight:600;color:var(--text);margin-bottom:4px;font-size:.78rem}
+.sim-trace-row{display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:.72rem}
+.sim-trace-row .trace-path{color:var(--text2);min-width:76px;flex-shrink:0}
+.sim-trace-row .trace-val{color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sim-trace-row .trace-val b{color:var(--impaired)}
+.sim-trace-row .trace-reason{color:var(--text2);opacity:.75;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Step Panel */
 .step-header{display:flex;align-items:center;gap:10px}
@@ -108,13 +245,3 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #complete-causal-map{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
 .causal-chip{font-size:.78rem;padding:5px 12px;border-radius:16px;border:1px solid var(--border);display:flex;align-items:center;gap:6px}
 .causal-chip .arrow{color:var(--accent)}
-
-/* Debug Panel */
-.debug-panel{position:fixed;bottom:0;left:0;right:0;background:rgba(19,27,43,.95);border-top:2px solid var(--accent);padding:8px 16px;z-index:50;max-height:200px;overflow-y:auto}
-.debug-panel.hidden{display:none}
-.debug-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-.debug-sliders{display:flex;flex-wrap:wrap;gap:6px}
-.debug-organ-group{display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--bg);border-radius:6px;font-size:.72rem}
-.debug-organ-group label{color:var(--text2);min-width:50px}
-.debug-organ-group input[type=range]{width:55px}
-.debug-organ-group .val{color:var(--accent);min-width:28px;text-align:right;font-size:.7rem}

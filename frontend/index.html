@@ -15,16 +15,75 @@
         </div>
         <div class="topbar-actions">
             <span class="status-dot connected" id="status-dot" title="连接状态"></span>
+            <button id="btn-lesion-mode" class="btn-icon" title="病灶模式：点击器官放置局部病灶，查看空间邻近影响" aria-pressed="false">🎯</button>
+            <button id="btn-lock-view" class="btn-icon" title="锁定视角：冻结相机旋转/缩放/平移，专注操作模型" aria-pressed="false">🔒</button>
+            <button id="btn-edit-mode" class="btn-icon" title="编辑模式：选中模型后可移动/旋转/缩放" aria-pressed="false">✏️</button>
             <button id="btn-reset" class="btn-icon" title="重置">🔄</button>
         </div>
     </header>
+
+    <!-- Edit Mode Toolbar -->
+    <div class="edit-toolbar hidden" id="edit-toolbar">
+        <div class="edit-toolbar-info">
+            <span class="edit-selected" id="edit-selected">点击 3D 场景中的模型以选中</span>
+        </div>
+        <div class="edit-toolbar-actions">
+            <div class="edit-mode-group" role="group" aria-label="变换模式">
+                <button class="btn-icon edit-mode-btn active" data-mode="translate" title="移动">✋</button>
+                <button class="btn-icon edit-mode-btn" data-mode="rotate" title="旋转">🔄</button>
+                <button class="btn-icon edit-mode-btn" data-mode="scale" title="缩放">🔍</button>
+            </div>
+            <button id="btn-toggle-visibility" class="btn btn-sm" title="勾选/取消勾选各模型的显示">👁 模型显示</button>
+            <button id="btn-export-json" class="btn btn-sm" title="导出所有模型的位置/旋转/缩放">📄 导出位置清单</button>
+            <button id="btn-export-csv" class="btn btn-sm" title="导出 CSV 表格">📊 导出 CSV</button>
+            <span class="edit-exit-hint">按 Esc 退出编辑模式</span>
+        </div>
+    </div>
+
+    <!-- 模型显示/隐藏面板 -->
+    <div class="visibility-panel hidden" id="visibility-panel">
+        <div class="visibility-header">
+            <span>模型显示</span>
+            <button id="btn-visibility-close" class="btn-icon" title="关闭">✕</button>
+        </div>
+        <div class="visibility-list" id="visibility-list">
+            <!-- JS fills checkboxes -->
+        </div>
+    </div>
+
+    <!-- 局部病灶影响面板 -->
+    <div class="lesion-panel hidden" id="lesion-panel">
+        <div class="visibility-header">
+            <span>🎯 局部病灶影响</span>
+            <button id="btn-lesion-close" class="btn-icon" title="关闭">✕</button>
+        </div>
+        <div class="lesion-hint">点击 3D 场景中的器官放置病灶，系统按几何距离计算邻近影响（归一化空间距离，非临床测量值）。</div>
+        <div class="lesion-status" id="lesion-status">未放置病灶</div>
+        <div class="lesion-list" id="lesion-list">
+            <!-- JS fills: proximity results -->
+        </div>
+        <div class="lesion-legend">
+            <span><i style="background:#ef4444"></i>直接病灶</span>
+            <span><i style="background:#f97316"></i>高风险邻近</span>
+            <span><i style="background:#eab308"></i>可能受影响</span>
+        </div>
+        <div class="sanity-section">
+            <button id="btn-sanity-check" class="btn btn-sm">🔍 空间合理性检查</button>
+            <div class="sanity-results" id="sanity-results"></div>
+        </div>
+        <div class="sanity-section">
+            <button id="btn-anatomy-arrange" class="btn btn-sm">🧬 解剖约束自动排列</button>
+            <div class="anatomy-results" id="anatomy-results"></div>
+        </div>
+        <button id="btn-lesion-clear" class="btn btn-sm">🗑 清除病灶</button>
+    </div>
 
     <!-- Main Content -->
     <div class="main">
         <!-- 3D Viewport -->
         <div class="viewport" id="viewport">
             <canvas id="three-canvas"></canvas>
-            <div class="viewport-hint">🖱 拖拽旋转 | 滚轮缩放 | 右键平移</div>
+            <div class="viewport-hint" id="viewport-hint">🖱 拖拽旋转 | 滚轮缩放 | 右键平移</div>
             <!-- Loading overlay -->
             <div class="loading-overlay hidden" id="loading-overlay">
                 <div class="spinner"></div>
@@ -49,6 +108,74 @@
                     <button class="btn btn-sm" data-scenario="严重脱水">脱水</button>
                     <button class="btn btn-sm" data-scenario="肝硬化晚期">肝硬化</button>
                 </div>
+                <div class="mode-divider"></div>
+                <div class="disease-mode-entry">
+                    <h3>🔬 疾病模拟（确定性生理引擎）</h3>
+                    <p class="mode-desc"><strong>生理引擎负责“发生什么”，多智能体负责“为什么发生”</strong> —— 核心生理数值由确定性机制推进，大模型不参与数值决策，仅负责教学解释。</p>
+                    <button id="btn-disease-mode" class="btn btn-primary">进入疾病模拟</button>
+                </div>
+            </div>
+
+            <!-- 疾病模拟：实验配置 -->
+            <div class="panel-disease-config hidden" id="panel-disease-config">
+                <h2>🔬 疾病模拟配置</h2>
+                <div class="config-tip">🎯 答辩主 Demo 推荐：<strong>急性肾损伤 · 重度</strong> —— 连续推进时间步，观察 eGFR 下降、肌酐/血钾/尿素氮升高、pH 下降，触发风险警报。</div>
+                <div class="config-group">
+                    <label>疾病模板</label>
+                    <select id="disease-select" class="config-select"></select>
+                </div>
+                <div class="config-group">
+                    <label>严重程度</label>
+                    <div class="severity-btns" id="severity-btns">
+                        <button class="btn btn-sm" data-severity="mild">轻度</button>
+                        <button class="btn btn-sm" data-severity="moderate">中度</button>
+                        <button class="btn btn-sm active" data-severity="severe">重度</button>
+                    </div>
+                </div>
+                <div class="config-group">
+                    <label>时间步（秒/步）</label>
+                    <input type="number" id="disease-time-step" value="2" min="0.5" max="10" step="0.5" class="config-input">
+                </div>
+                <div class="config-actions">
+                    <button id="btn-start-disease" class="btn btn-primary btn-lg">开始仿真</button>
+                    <button id="btn-disease-back" class="btn">返回</button>
+                </div>
+                <p class="sim-disclaimer">⚠️ 本系统所有生理参数仅用于教学机制演示，不构成临床治疗建议。</p>
+            </div>
+
+            <!-- 疾病模拟：实时仿真视图 -->
+            <div class="panel-disease-run hidden" id="panel-disease-run">
+                <div class="sim-header">
+                    <span class="sim-title" id="sim-title">急性肾损伤</span>
+                    <span class="sim-time" id="sim-time">t=0s</span>
+                    <span class="sim-step" id="sim-step">step 0</span>
+                </div>
+                <div class="sim-controls">
+                    <button id="btn-tick-1" class="btn btn-sm">+1 步</button>
+                    <button id="btn-tick-10" class="btn btn-sm">+10 步</button>
+                    <button id="btn-auto-play" class="btn btn-sm">▶ 自动播放</button>
+                    <button id="btn-hemodialysis" class="btn btn-sm btn-intervention" title="教学型干预：清除代谢废物，血钾/肌酐/尿素氮下降、HCO3 上升、pH 改善">🩸 执行紧急透析</button>
+                    <button id="btn-disease-reset" class="btn btn-sm">↺ 重置</button>
+                </div>
+                <div class="sim-alerts" id="sim-alerts"></div>
+                <div class="sim-path" id="sim-path">
+                    <div class="sim-path-title">📌 病理因果链（AKI）</div>
+                    <div class="sim-path-steps">肾小球滤过下降 <span class="arrow">→</span> 代谢废物清除减少 <span class="arrow">→</span> 肌酐、尿素氮升高 <span class="arrow">→</span> 钾潴留与代谢性酸中毒 <span class="arrow">→</span> 心血管风险增加</div>
+                </div>
+                <div class="sim-indicators" id="sim-indicators"></div>
+                <div class="sim-chart-wrap">
+                    <div class="chart-title">关键指标随时间演化</div>
+                    <canvas id="sim-chart"></canvas>
+                </div>
+                <div class="sim-interventions" id="sim-interventions"></div>
+                <div class="sim-traces" id="sim-traces">
+                    <div class="sim-traces-title">🧠 Agent 执行轨迹（本步）</div>
+                    <div class="sim-traces-body" id="sim-traces-body">
+                        <div class="sim-trace-empty">推进时间步后，这里将展示 肾脏 → 血液 → 心血管 各 Agent 读取与修改了什么</div>
+                    </div>
+                </div>
+                <div class="sim-log" id="sim-log"></div>
+                <p class="sim-disclaimer">⚠️ 参数用于教学机制演示，不构成临床治疗建议。</p>
             </div>
 
             <!-- Step display state -->
@@ -87,26 +214,15 @@
     </div>
 
     <!-- Scripts -->
+    <!-- 所有前端依赖已本地化到 /static/vendor/，完全离线可运行（不依赖任何外网 CDN） -->
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            "three": "/static/vendor/three/three.module.js",
+            "three/addons/": "/static/vendor/three/"
         }
     }
     </script>
-    <!-- Debug Panel (toggle with D key) -->
-    <div id="debug-panel" class="debug-panel hidden">
-        <div class="debug-header">
-            <strong>🔧 位置调试</strong>
-            <span style="font-size:.7rem;color:#8899b4">
-                双击器官拖动 | 滑块微调 | Ctrl+C 导出
-            </span>
-            <button id="btn-export-pos" class="btn btn-sm">📋 导出位置</button>
-        </div>
-        <div id="debug-sliders" class="debug-sliders"></div>
-    </div>
-
-    <script type="module" src="/static/js/app.js?v=6"></script>
+    <script type="module" src="/static/js/app.js?v=15"></script>
 </body>
 </html>
