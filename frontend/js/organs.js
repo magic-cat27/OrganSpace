@@ -1,126 +1,160 @@
 /**
- * Organ definitions with GLB model paths.
- * Positions are approximate — adjust via the debug panel (press D key).
+ * Organ definitions — 3D position, GLB model path, color, label.
+ * GLB models take priority; geometry fallback if no model file.
+ *
+ * 说明（2026-08-05 重构）：
+ *  - 只保留有真实 GLB 模型的器官 + 骨架。
+ *  - 模型合并：胆囊模型实际是「肝与胆囊」连体（原 liver.glb 与 gallbladder.glb
+ *    实为同一模型），小肠模型实际是「大肠与小肠」连体（原 large_intestine.glb
+ *    与 small_intestine.glb 实为同一模型）→ 删除重复的 liver / large_intestine。
+ *  - 命名：心脏 / 肺 / 胃 / 肾脏×2 / 脾脏 / 胰腺 / 肝与胆囊 / 大肠与小肠 / 骨骼。
+ *
+ * scale 语义：
+ *  - scale（解剖比例）：模型内部缩放。基准 = 肝脏 ~1.5L → 1.0，
+ *    scale = (器官体积 / 1.5L)^(1/3) / 模型最长边。
+ *  - groupScale（布局缩放）：场景中 group 的整体缩放（编辑模式调整）。
+ *    最终渲染 = scale(解剖) × groupScale(布局)。
  */
 export const ORGAN_DEFS = [
     {
-        id: 'cardiovascular',
-        name: '心血管',
+        id: 'heart',
+        name: '心脏',
         color: 0xef4444,
-        position: [0, 0, 0],
-        scale: 1.0,
+        position: [1.434, 2.05, 0.972],
+        rotation: [0, 0, 0],
+        scale: 0.555,      // ~0.3L（解剖）
+        groupScale: 0.481,
         modelPath: '/static/assets/models/heart.glb',
-        labelOffset: [0, -0.6, 0],
+        labelOffset: [0, -1.0, 0],
     },
     {
-        id: 'respiratory',
-        name: '呼吸系统',
+        id: 'lung',
+        name: '肺',
         color: 0x60a5fa,
-        position: [0, 0.3, -0.3],
-        scale: 1.0,
+        position: [1.398, 2.15, 0.877],
+        rotation: [-3.142, -3.092, -3.142],
+        scale: 1.307,      // 双肺 ~2.5L（解剖）
+        groupScale: 0.505,
         modelPath: '/static/assets/models/lung.glb',
-        labelOffset: [0, -0.6, 0],
+        labelOffset: [0, -1.0, 0],
     },
     {
-        id: 'hepatic',
-        name: '肝脏',
-        color: 0x92400e,
-        position: [0.3, -0.7, 0],
-        scale: 1.0,
-        modelPath: '/static/assets/models/liver.glb',
-        labelOffset: [0, -0.5, 0],
-    },
-    {
-        id: 'metabolic',
-        name: '胃/代谢',
-        color: 0x8b5cf6,
-        position: [-0.3, -0.4, 0.1],
-        scale: 1.0,
+        id: 'stomach',
+        name: '胃',
+        color: 0xf59e0b,
+        position: [1.485, 1.8, 0.954],
+        rotation: [0.1, 3.2, 0],
+        scale: 0.483,      // 空胃 ~0.15L（解剖）
+        groupScale: 1,
         modelPath: '/static/assets/models/stomach.glb',
-        labelOffset: [0, -0.4, 0],
+        labelOffset: [0, -0.5, 0],
+        draggable: true,
     },
     {
-        id: 'immune',
-        name: '免疫(脾)',
-        color: 0x22c55e,
-        position: [-0.6, -0.3, -0.2],
-        scale: 1.0,
-        modelPath: '/static/assets/models/spleen.glb',
-        labelOffset: [0, -0.3, 0],
-    },
-    {
-        id: 'renal',
+        id: 'kidney',
         name: '肾脏',
         color: 0xa78bfa,
-        position: [-0.4, -1.0, -0.3],
-        scale: 0.5,
-        modelPath: null,
-        labelOffset: [0, -0.4, 0],
+        position: [1.262, 1.65, 0.834],
+        rotation: [2.387, -0.027, -3.038],
+        scale: 0.711,      // 双肾 ~0.3L（解剖）
+        groupScale: 0.436,
+        modelPath: '/static/assets/models/kidney.glb',
+        labelOffset: [-0.5, -0.5, 0],
     },
     {
-        id: 'nervous',
-        name: '神经(脑)',
-        color: 0xfbbf24,
-        position: [0, 2.2, 0],
-        scale: 0.6,
-        modelPath: null,
+        id: 'kidney_left',
+        name: '肾脏（左）',
+        color: 0xa78bfa,
+        position: [1.631, 1.65, 0.773],
+        rotation: [0.7, 0.143, 0],
+        scale: 0.711,
+        groupScale: 0.416,
+        modelPath: '/static/assets/models/kidney_left.glb',
+        labelOffset: [-0.5, -0.5, 0],
+        draggable: true,
+    },
+    {
+        id: 'spleen',
+        name: '脾脏',
+        color: 0x22c55e,
+        position: [1.571, 1.85, 0.875],
+        rotation: [-0.045, 0.238, -1.698],
+        scale: 0.422,      // ~0.15L（解剖）
+        groupScale: 0.585,
+        modelPath: '/static/assets/models/spleen.glb',
         labelOffset: [0, -0.5, 0],
     },
     {
-        id: 'coagulation',
-        name: '凝血/胰腺',
-        color: 0xea580c,
-        position: [0.3, -0.8, 0.1],
-        scale: 0.5,
-        modelPath: null,
-        labelOffset: [0, -0.3, 0],
+        id: 'pancreas',
+        name: '胰腺',
+        color: 0x8b5cf6,
+        position: [1.5, 1.75, 0.85],
+        rotation: [-2.212, -0.354, -3.114],
+        scale: 0.348,      // ~0.1L（解剖）
+        groupScale: 1,
+        modelPath: '/static/assets/models/pancreas.glb',
+        labelOffset: [0, -0.5, 0],
     },
     {
-        id: 'blood',
-        name: '血液系统',
-        color: 0xdc2626,
-        position: [0, 0, 0],
-        scale: 0.1,
-        modelPath: null,
-        labelOffset: [0, 10, 0],
+        id: 'gallbladder',
+        name: '肝与胆囊',
+        color: 0x84cc16,
+        position: [1.4, 1.75, 0.9],
+        rotation: [0, 0, 0],
+        scale: 0.972,      // 肝1.5L+胆0.05L ≈ 1.55L（解剖）
+        groupScale: 0.577,
+        modelPath: '/static/assets/models/gallbladder.glb',
+        labelOffset: [0, -0.5, 0],
+        draggable: true,
+    },
+    {
+        id: 'small_intestine',
+        name: '大肠与小肠',
+        color: 0xf472b6,
+        position: [1.4, 1.35, 0.85],
+        rotation: [0, 0, 0],
+        scale: 0.693,      // 大肠0.2L+小肠0.3L ≈ 0.5L（解剖）
+        groupScale: 1.25,
+        modelPath: '/static/assets/models/small_intestine.glb',
+        labelOffset: [0, -0.6, 0],
+        draggable: true,
+    },
+    {
+        id: 'skeleton',
+        name: '骨骼',
+        color: 0xd6cfc7,
+        position: [1.447, 1.05, 0.937],
+        rotation: [0.057, 0.056, 0.02],
+        scale: 1.346,      // 全身骨骼 ~6L（解剖）
+        groupScale: 2.487,
+        modelPath: '/static/assets/models/skeleton.glb',
+        labelOffset: [0, -1.2, 0],
+        draggable: true,
     },
 ];
 
-// Blood vessels — aorta, vena cava, pulmonary, renal, hepatic, etc.
-export const BLOOD_VESSELS = [
-    { name: '主动脉', path: [[0,-0.4,0.05],[0,0.3,0.05],[0,0.45,0.0],[-0.05,0.4,-0.05],[-0.1,0.1,-0.1],[-0.15,-0.5,-0.15],[-0.15,-1.1,-0.15]], color: 0xcc2222, radius: 0.035 },
-    { name: '上腔静脉', path: [[0.05,0.4,-0.05],[0.05,0.1,-0.05],[0.04,-0.05,0.0]], color: 0x3344cc, radius: 0.035 },
-    { name: '下腔静脉', path: [[0.04,-0.05,0.0],[0.06,-0.4,-0.05],[0.08,-0.8,-0.08],[0.08,-1.2,-0.08]], color: 0x3344cc, radius: 0.035 },
-    { name: '肺动脉右', path: [[0,0.3,0.08],[0.2,0.35,0.05],[0.3,0.3,0.0]], color: 0x4466cc, radius: 0.025 },
-    { name: '肺动脉左', path: [[0,0.3,0.08],[-0.1,0.35,0.05],[-0.2,0.3,0.0]], color: 0x4466cc, radius: 0.025 },
-    { name: '肾动脉右', path: [[-0.12,-0.8,-0.15],[0.05,-0.8,-0.2],[0.2,-0.85,-0.25]], color: 0xcc2222, radius: 0.018 },
-    { name: '肾动脉左', path: [[-0.12,-0.8,-0.15],[-0.2,-0.85,-0.2],[-0.3,-0.9,-0.25]], color: 0xcc2222, radius: 0.018 },
-    { name: '肝动脉', path: [[-0.12,-0.5,-0.15],[0.0,-0.55,-0.1],[0.15,-0.6,-0.05]], color: 0xcc2222, radius: 0.016 },
-    { name: '门静脉', path: [[-0.25,-0.45,0.1],[-0.05,-0.55,0.08],[0.15,-0.6,0.02]], color: 0x8866cc, radius: 0.018 },
-    { name: '颈动脉', path: [[0,0.45,0.03],[0,1.2,0.05],[0,1.8,0.05]], color: 0xcc2222, radius: 0.02 },
-    { name: '脾动脉', path: [[-0.12,-0.5,-0.12],[-0.3,-0.45,-0.15],[-0.45,-0.4,-0.18]], color: 0xcc2222, radius: 0.014 },
+export const CONNECTIONS_3D = [
+    ['heart', 'lung'],
+    ['heart', 'kidney'],
+    ['kidney', 'pancreas'],
+    ['heart', 'pancreas'],
+    // 消化链路：胃 → 肝与胆囊 → 大肠与小肠
+    ['stomach', 'gallbladder'],
+    ['gallbladder', 'small_intestine'],
+    ['stomach', 'small_intestine'],
+    ['skeleton', 'heart'],
+    ['kidney', 'kidney_left'],
+    ['spleen', 'heart'],
+    ['lung', 'heart'],
 ];
 
-export const CONNECTIONS = [
-    { a: 'cardiovascular', b: 'respiratory', relation: '心肺循环' },
-    { a: 'cardiovascular', b: 'renal', relation: '肾灌注/RAAS' },
-    { a: 'cardiovascular', b: 'hepatic', relation: '肝血供' },
-    { a: 'cardiovascular', b: 'nervous', relation: '脑灌注/自主神经' },
-    { a: 'cardiovascular', b: 'metabolic', relation: '激素/营养输送' },
-    { a: 'cardiovascular', b: 'coagulation', relation: '血流/血栓' },
-    { a: 'respiratory', b: 'blood', relation: '气体交换' },
-    { a: 'renal', b: 'hepatic', relation: '肝肾综合征' },
-    { a: 'renal', b: 'metabolic', relation: '电解质/酸碱/EPO' },
-    { a: 'renal', b: 'blood', relation: 'EPO→红细胞' },
-    { a: 'hepatic', b: 'metabolic', relation: '糖脂代谢/合成' },
-    { a: 'hepatic', b: 'coagulation', relation: '凝血因子合成' },
-    { a: 'immune', b: 'coagulation', relation: '炎症→凝血' },
-    { a: 'immune', b: 'nervous', relation: '神经免疫轴' },
-    { a: 'immune', b: 'blood', relation: '白细胞生成' },
-    { a: 'blood', b: 'coagulation', relation: '血小板/凝血因子' },
-    { a: 'metabolic', b: 'nervous', relation: '下丘脑-垂体轴' },
-    { a: 'respiratory', b: 'nervous', relation: '呼吸中枢调控' },
-];
+export const STATUS_COLORS = {
+    normal: 0x22c55e,
+    stressed: 0xeab308,
+    impaired: 0xf97316,
+    failing: 0xef4444,
+};
 
-export const STATUS_COLORS = { normal: 0x22c55e, stressed: 0xeab308, impaired: 0xf97316, failing: 0xef4444 };
-export function getOrganDef(id) { return ORGAN_DEFS.find(o => o.id === id); }
+export function getOrganDef(id) {
+    return ORGAN_DEFS.find(o => o.id === id);
+}
